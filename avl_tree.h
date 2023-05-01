@@ -5,18 +5,18 @@ using T = int;
 class avl_tree 
 {    
 private:
-    class node;
+	class node;
 
 public:
-    avl_tree();
+    	avl_tree();
 
 	bool empty();
 
-    void remove_all(node* node_);
+    	void remove_all(node* node_);
 
 	void insert(const T& data);
 
-    void write() const;
+    	void write() const;
 
 	void write_balance() const;
 
@@ -27,11 +27,13 @@ public:
 	node* find(const T& data, node*& parent);
 
 private:
-    node* root;
-    unsigned int number_of_elements;
+    	node* root;
+    	unsigned int number_of_elements;
 	unsigned int number_of_levels;
 
-    int getDepth(node* node_);
+   	int getDepth(node* node_);
+
+	int giveDepth(node* node_);
 
 	void remove_leaf(node* to_delete, node* parent);
 
@@ -39,7 +41,9 @@ private:
 
 	void remove_with_two_children(node* to_delete, node* parent);
 
-	void balance(node* end_node);
+	void balance_insert(node* end_node);
+	
+	bool balance_del(node* end_node);
 
 	void write_(node* node_) const;
 
@@ -57,7 +61,9 @@ private:
 
 	void recalculate_after_balance_(node* node_);
 
+	void increment_depth(node* subtree);
 
+	void decrement_depth(node* subtree);
 };
 
 class avl_tree::node
@@ -74,7 +80,7 @@ private:
 	T data;
 	node* left;
 	node* right;
-    int balance;
+    	int balance;
 	unsigned int depth;
 
 	friend class avl_tree;
