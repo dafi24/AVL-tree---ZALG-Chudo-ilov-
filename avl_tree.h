@@ -5,7 +5,7 @@ using T = int;
 class avl_tree 
 {    
 private:
-	class node;
+    	class node;
 
 public:
     	avl_tree();
@@ -31,9 +31,7 @@ private:
     	unsigned int number_of_elements;
 	unsigned int number_of_levels;
 
-   	int getDepth(node* node_);
-
-	int giveDepth(node* node_);
+    	int getDepth(node* node_);
 
 	void remove_leaf(node* to_delete, node* parent);
 
@@ -56,14 +54,6 @@ private:
 	void left_right_rotation(node* node_, node* parent);
 
 	void right_left_rotation(node* node_, node* parent);
-
-	void recalculate_after_balance(node* node_);
-
-	void recalculate_after_balance_(node* node_);
-
-	void increment_depth(node* subtree);
-
-	void decrement_depth(node* subtree);
 };
 
 class avl_tree::node
