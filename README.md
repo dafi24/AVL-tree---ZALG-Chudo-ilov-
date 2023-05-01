@@ -1,7 +1,7 @@
 # AVL strom
-Datová struktura vycházející z binárního vyhledávacího stromu
-Pomocí rotací při vkládání nebo odstraňování vrcholů stromu udržuje vyváženost, tedy že žádný podstrom nemá hloubku svého levého a pravého podstromu vzájemně různou o více jak 1
-Díky tomu je zajištěno, že časová náročnost vyhledávání vrcholu podle hodnoty zůstane vždy log<sub>2</sub>(n)
+Datová struktura vycházející z binárního vyhledávacího stromu  
+Pomocí rotací při vkládání nebo odstraňování vrcholů stromu udržuje vyváženost, tedy že žádný podstrom nemá hloubku svého levého a pravého podstromu vzájemně různou o více jak 1  
+Díky tomu je zajištěno, že časová náročnost vyhledávání vrcholu podle hodnoty zůstane vždy log<sub>2</sub>(n)  
 
 ## Funkce a metody třídy avl_tree
     bool empty(); // vymaže všechna data
