@@ -22,13 +22,14 @@ T avl_tree::node::getData() const
 	return this->data;
 }
 
-int avl_tree::node::getBalance() const {
+int avl_tree::node::getBalance() const 
+{
 	return this->balance;
 }
 
 int avl_tree::getDepth(node* node_)
 {
-	if (node_ != nullptr)
+	if (node_)
 	{
 		int l = 0, p = 0;
 		l = getDepth(node_->left);
@@ -71,8 +72,8 @@ void avl_tree::insert(const T& data)
 				help->right->depth = help_depth + 1;
 				number_of_elements++;
 
-				this->number_of_levels = (help_depth + 1) > this->number_of_levels ? (help_depth + 1) : this->number_of_levels;
-				balance(help->right);
+				balance_insert(help->right);
+				this->number_of_levels = getDepth(root);
 				return;
 			}
 			help = help->right;
@@ -86,8 +87,8 @@ void avl_tree::insert(const T& data)
 				help->left->depth = help_depth + 1;
 				number_of_elements++;
 
-				this->number_of_levels = (help_depth + 1) > this->number_of_levels ? (help_depth + 1) : this->number_of_levels;
-				balance(help->left);
+				balance_insert(help->left);
+				this->number_of_levels = getDepth(root);
 				return;
 			}
 			help = help->left;
@@ -98,72 +99,43 @@ void avl_tree::insert(const T& data)
 
 void avl_tree::treeprint()
 {
-	std::cout << std::endl << std::endl;
+	unsigned int h = getDepth(root); // Vypocti vysku stromu
+	unsigned int space = (1 << (h - 1)); // mezera pred a za kazdym prvkem je 2^(h-1)
+	std::queue<node*> q; // Fronta na uchovavani jednotlivych urovni stromu
+	q.push(root);        // vloz 1. uroven do stromu
+	node* curr;          // pomocna promenna ukazujici na aktualni vypisovany prvek
 
-	struct node_help
+	for (unsigned int i = 1; i <= h; i++) // Projdi vsech h pater
 	{
-		node* p;
-		bool is_separator;
-	};
-
-	std::queue<node_help> q;
-
-	q.push(node_help{ root, false });
-	q.push(node_help{ nullptr, true });
-
-	int help_depth = 0;
-
-	int space = pow(2, this->number_of_levels - root->depth + 2);
-	std::cout << std::setw(space) << "";
-
-	while (!q.empty())
-	{
-		node_help help = q.front();
-		q.pop();
-
-		if (help.p != nullptr)
+		unsigned int level_size = q.size(); // velikost i-te urovne - (slo by i jinak protoze delame siroky vypis, ale lookup na q.size() je O(1) takze neni potreba rucne pocitat)
+		for (unsigned int j = 0; j < level_size; j++) // Projdi vsech k prvku na patre
 		{
-			q.push(node_help{ help.p->left, false });
-			q.push(node_help{ help.p->right, false });
-
-			int result = ((help.p->data <= 1) ? 1 : log10(help.p->data) + 1);
-
-			std::cout << help.p->data;
-
-			space = pow(2, this->number_of_levels - help.p->depth + 2);
-			std::cout << std::setw(2 * space - result) << "";
-		}
-		else if (help.is_separator == true)
-		{
-			help_depth++;
-
-			if (q.empty())
-			{
-				break;
+			// postupne vyjmi kazdy prvek z i-teho patra
+			curr = q.front();
+			q.pop();
+			//
+			std::cout << std::setw(space * 2) << std::right; // cislo kterym nasobime space je maximalni pocet cislic klice
+			if (curr) { // existuje-li aktualni prvek
+				// vloz jeho syny do frontu (do dalsiho patra)
+				q.push(curr->left);
+				q.push(curr->right);
+				// a vypis jeho klic
+				std::cout << curr->data;
 			}
-
-			std::cout << std::endl;
-			space = pow(2, this->number_of_levels - help_depth + 2);
-			std::cout << std::setw(space) << "";
-			q.push(node_help{ nullptr, true });
-
-			if (help_depth > this->number_of_levels)
-			{
-				break;
+			else { // neexistuje-li aktualni prvek (prvek je nullptr)
+				// vloz do fronty jako jeho syny zase nullptr
+				q.push(nullptr);
+				q.push(nullptr);
+				// Vypis mezeru misto jeho hodnoty
+				std::cout << "  "; // lze prepsat na "xx" a bude na miste chybejiciho vrcholu psat "xx"
 			}
+			// vynech zase mezeru za prvkem
+			std::cout << std::setw(space * 2) << " "; // cislo kterym nasobime space je maximalni pocet cislic klice
 		}
-		else
-		{
-			q.push(node_help{ nullptr, false });
-			q.push(node_help{ nullptr, false });
-			std::cout << "x";
-			space = pow(2, this->number_of_levels - help_depth + 2);
-
-			std::cout << std::setw(2 * space - 1) << "";
-		}
+		space /= 2; // zmensi mezeru na dalsi urovni na polovinu
+		std::cout << std::endl; // prejdi na novy radek
 	}
-
-	std::cout << std::endl << std::endl;
+	std::cout << std::endl;
 }
 
 void avl_tree::remove_all(node* node_)
@@ -186,7 +158,7 @@ avl_tree::node* avl_tree::find(const T& data, node*& parent) {
 	}
 	node* help = root;
 
-	while (help != nullptr) {
+	while (help) {
 		if (help->getData() == data) return help;
 
 		parent = help;
@@ -203,30 +175,40 @@ avl_tree::node* avl_tree::find(const T& data, node*& parent) {
 	return nullptr;
 }
 
+using namespace std;
+
 void avl_tree::remove_node(const T& data)
 {
 	node* parent = nullptr;
 	node* to_delete = find(data, parent);
 
-	if (to_delete == nullptr)
-	{
-		return;
-	}
+	if (to_delete == nullptr) return;
 
+	bool leftChild;
+
+	if (to_delete != root) leftChild = to_delete == parent->left ? true : false;
+	
 	if (to_delete->left && to_delete->right)
 	{
 		remove_with_two_children(to_delete, parent);
-		balance(parent);
 	}
 	else if (to_delete->left || to_delete->right)
 	{
 		remove_with_one_child(to_delete, parent);
-		balance(parent);
+		
+		if (leftChild)
+		{
+			if (!balance_del(parent->left)) balance_insert(parent->left);
+		}
+		else 
+		{			
+			if (!balance_del(parent->right)) balance_insert(parent->right);
+		}
 	}
 	else
 	{
 		remove_leaf(to_delete, parent);
-		balance(parent);
+		if (!balance_del(parent)) balance_insert(parent);
 	}
 }
 
@@ -281,73 +263,150 @@ void avl_tree::remove_with_one_child(node* to_delete, node* parent)
 void avl_tree::remove_with_two_children(node* to_delete, node* parent) 
 {
 	node* help = to_delete->left;
+	node* grandparent = parent;
 	parent = to_delete;
-
-	while (help->right) {
+	 
+	while (help->right) 
+	{
+		grandparent = parent;
 		parent = help;
 		help = help->right;
 	}
 
 	to_delete->data = help->getData();
 
-	if (help->left != nullptr) {
+	if (help->left) {
 		remove_with_one_child(help, parent);
+		if (!balance_del(help->left)) balance_insert(help->left);
 	} else {
 		remove_leaf(help, parent);
+		if (!balance_del(parent)) balance_insert(parent);
 	}
 }
 
-void avl_tree::balance(node* end_node) 
+void avl_tree::balance_insert(node* end_node) 
 {
 	if (end_node == nullptr) return;
 	
 	node* parent = nullptr;
-	node* grandparent = nullptr;
 	node* help = root;
 
-	while (help != nullptr) 
-	{
-		if (help->getData() == end_node->data) return;
-		
-		help->balance = getDepth(help->left) - getDepth(help->right);
-		
-		if (help->balance < -1) 
-		{
-			if (help == root) left_rotation(help, nullptr);
-			else if (parent->left == help) left_right_rotation(parent, grandparent);
-			else if (parent->right == help) left_rotation(parent, grandparent);
-			recalculate_after_balance(parent);
-			return;
-		} 
-		else if (help->balance > 1) 
-		{
-			if (help == root) right_rotation(help, nullptr);
-			else if (parent->left == help) right_rotation(parent, grandparent);
-			else if (parent->right == help) right_left_rotation(parent, grandparent);
-			recalculate_after_balance(parent);
-			return;
-			
-		}
+	node* unbalanced_min = nullptr;
+	node* unbalanced_min_parent = nullptr;
 
-		grandparent = parent;
+	while (help) 
+	{	
+		help->balance = getDepth(help->left) - getDepth(help->right);
+
+		if (abs(help->balance) > 1)
+		{
+			unbalanced_min_parent = parent;
+			unbalanced_min = help;
+		} 
+
+		if (help->getData() == end_node->getData()) break;
+
 		parent = help;
 
-		if (end_node->data > help->getData()) 
+		if (end_node->getData() > help->getData()) 
 		{
-			if (help->right == nullptr) return;
+			if (help->right == nullptr) break;
 			help = help->right;
 		}
 		else 
 		{
-			if (help->left == nullptr) return;
+			if (help->left == nullptr) break;
 			help = help->left;
 		}
 	}
+	
+	if (unbalanced_min)
+	{
+		if (unbalanced_min->balance > 1) 
+		{
+			if (end_node->getData() < unbalanced_min->left->getData()) right_rotation(unbalanced_min, unbalanced_min_parent);
+			else left_right_rotation(unbalanced_min, unbalanced_min_parent);
+		}
+		else
+		{
+			if (end_node->getData() > unbalanced_min->right->getData()) left_rotation(unbalanced_min, unbalanced_min_parent);
+			else right_left_rotation(unbalanced_min, unbalanced_min_parent);
+		}
+	}
+}
+
+bool avl_tree::balance_del(node* end_node) 
+{	
+	node* parent = nullptr;
+	node* help = root;
+
+	node* unbalanced_min = nullptr;
+	node* unbalanced_min_parent = nullptr;
+	bool leftChild;
+
+	while (help) 
+	{		
+		help->balance = getDepth(help->left) - getDepth(help->right);
+
+		if (abs(help->balance) > 1)
+		{
+			unbalanced_min_parent = parent;
+			unbalanced_min = help;
+			if (unbalanced_min != root) leftChild = unbalanced_min == unbalanced_min_parent->left ? true : false;
+		}
+		parent = help;
+
+		if (end_node->getData() > help->getData()) 
+		{
+			if (help->right == nullptr) break;
+			help = help->right;
+		}
+		else 
+		{
+			if (help->left == nullptr) break;
+			help = help->left;
+		}
+	}
+
+	if (!unbalanced_min) return false;
+
+	if (unbalanced_min == root)
+	{
+		if (root->balance > 1)
+		{
+			if (getDepth(root->left->right) > getDepth(root->left->left)) left_right_rotation(root, nullptr);
+			else right_rotation(root, nullptr);
+		}
+		else
+		{
+			if (getDepth(root->right->left) > getDepth(root->right->right)) right_left_rotation(root, nullptr);
+			else left_rotation(root, nullptr);
+		}
+	} 
+	else
+	{
+		node* y = getDepth(unbalanced_min->left) > getDepth(unbalanced_min->right) ? unbalanced_min->left : unbalanced_min->right;
+		node* z = getDepth(y->left) > getDepth(y->right) ? y->left : y->right;
+
+		if (unbalanced_min->left == y)
+		{
+			if (y->left == z) right_rotation(unbalanced_min, unbalanced_min_parent);
+			else left_right_rotation(unbalanced_min, unbalanced_min_parent);
+		}
+		else
+		{
+			if (y->left == z) right_left_rotation(unbalanced_min, unbalanced_min_parent);
+			else left_rotation(unbalanced_min, unbalanced_min_parent);
+		}
+		balance_insert(leftChild ? unbalanced_min_parent->left : unbalanced_min_parent->right);
+	}
+	return true;
 }
 
 void avl_tree::write() const
 {
 	write_(root);
+	std::cout << std::endl;
 }
 
 void avl_tree::write_balance() const 
@@ -438,27 +497,4 @@ void avl_tree::right_left_rotation(node* node_, node* parent)
 	if (node_->right->left == nullptr) return;
 	right_rotation(node_->right, node_);
 	left_rotation(node_, parent);
-}
-
-void avl_tree::recalculate_after_balance(node* node_)
-{	
-	recalculate_after_balance_(node_);
-
-	int left_depth = getDepth(root->left) + 1;
-	int right_depth = getDepth(root->right) + 1;
-	number_of_levels = left_depth > right_depth ? left_depth : right_depth;
-}
-
-void avl_tree::recalculate_after_balance_(node* node_)
-{
-	if (node_ == nullptr) return;
-
-	recalculate_after_balance(node_->left);
-	recalculate_after_balance(node_->right);
-
-	int left_depth = getDepth(node_->left) + 1;
-	int right_depth = getDepth(node_->right) + 1;
-
-	node_->balance = left_depth - right_depth;
-	node_->depth = left_depth > right_depth ? left_depth : right_depth;
 }
